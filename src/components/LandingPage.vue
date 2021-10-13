@@ -14,7 +14,13 @@
         <vs-table :data="filteredUsers">
           <template slot="thead">
             <vs-th class="select-all-option pb-5">
-              <vs-checkbox size="small" />
+              <vs-checkbox
+                v-model="isAllUsers"
+                icon="fas fa-check"
+                icon-pack="fa5"
+                size="small"
+                @change="selectAll"
+              />
             </vs-th>
             <vs-th
               v-for="header in fields"
@@ -33,7 +39,13 @@
               :key="user['id']"
             >
               <vs-td>
-                <vs-checkbox size="small" />
+                <vs-checkbox
+                  v-model="user['is-selected']"
+                  icon="fas fa-check"
+                  icon-pack="fa5"
+                  size="small"
+                  @change="selectUser(user)"
+                />
               </vs-td>
               <td
                 v-for="info in fields"
@@ -50,15 +62,29 @@
           </template>
         </vs-table>
       </div>
-      <div class="footer-content">
+      <div class="footer-content flex-box ph-25">
+        <vs-button
+          v-if="selectedUsers.length || isAllUsers"
+          color="danger"
+          class="font-small pv-3 mv-5 ph-10"
+          @click="deleteUsers"
+        >
+          Delete
+        </vs-button>
         <app-pagination
-          v-if="! searchKeyword.length"
+          v-if="! searchKeyword.length && users.length && users.length > recordsPerPage"
           :total="users.length"
           :current-page="currentPage"
           :records-per-page="recordsPerPage"
           @change="updatePagination"
         />
       </div>
+      <delete-user
+        :users="selectedUsers"
+        :show="showDeletePopup"
+        @delete="handleDeletion"
+        @close="closeDeletePopup"
+      />
     </vs-col>
   </vs-row>
 </template>
@@ -67,10 +93,11 @@
   import axios from 'axios';
   import SearchBar from './SearchBar';
   import AppPagination from './AppPagination';
+  import DeleteUser from './DeleteUser';
 
   export default {
     name: 'LandingPage',
-    components: { AppPagination, SearchBar },
+    components: { DeleteUser, AppPagination, SearchBar },
     data: function () {
       return {
         users: [],
@@ -90,9 +117,12 @@
         ],
         searchKeyword: '',
         currentPage: 1,
-        recordsPerPage: 10,
+        recordsPerPage: 11,
         startRecordIndex: 0,
         endRecordIndex: 0,
+        isAllUsers: false,
+        selectedUsers: [],
+        showDeletePopup: false,
       };
     },
     computed: {
@@ -115,7 +145,10 @@
     methods: {
       getUsers: function () {
         this.fetchUsers().then(users => {
-          this.users = users;
+          this.users = users.map(user => {
+            this.$set(user, 'is-selected', false);
+            return user;
+          });
           this.updateIndices();
         }).catch(error => {
           console.log(error);
@@ -140,6 +173,34 @@
       updateIndices: function () {
         this.endRecordIndex = (this.currentPage * this.recordsPerPage);
         this.startRecordIndex = this.endRecordIndex - this.recordsPerPage;
+      },
+      selectUser: function (user) {
+        let existingIndex = this.selectedUsers.findIndex(u => u['id'] === user['id']);
+        if(existingIndex === -1) {
+          this.selectedUsers.push(user);
+        } else {
+          this.selectedUsers.splice(existingIndex, 1);
+        }
+      },
+      selectAll: function () {
+        this.users.forEach(user => {
+          user['is-selected'] = this.isAllUsers;
+        });
+        this.selectedUsers = this.deepCopy(this.users);
+      },
+      deleteUsers: function () {
+        this.showDeletePopup = true;
+      },
+      closeDeletePopup: function () {
+        this.showDeletePopup = false;
+      },
+      handleDeletion: function (users) {
+        this.users = this.users.filter(user => {
+          let existingUserIndex = users.findIndex(u => u['id'] === user['id']);
+          console.log(existingUserIndex);
+          return existingUserIndex === -1;
+        });
+        this.closeDeletePopup();
       }
     }
   };
