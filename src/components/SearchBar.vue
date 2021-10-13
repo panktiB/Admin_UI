@@ -1,7 +1,8 @@
 <template>
-  <vs-row class="width-100">
+  <vs-row class="width-100 text-align-left">
     <vs-input
       v-model="searchKeyword"
+      placeholder="Search name, email or role"
       class="width-100"
       @input="emitEvent"
     />
