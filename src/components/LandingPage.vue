@@ -16,7 +16,7 @@
             <vs-th class="select-all-option pb-5">
               <vs-checkbox
                 v-model="isAllUsers"
-                :disabled="! filteredUsers.length || searchKeyword.length"
+                :disabled="! filteredUsers.length"
                 icon="fas fa-check"
                 icon-pack="fa5"
                 size="small"
@@ -72,7 +72,7 @@
       </div>
       <div class="footer-content flex-box ph-25">
         <vs-button
-          v-if="(selectedUsers.length || isAllUsers) && ! searchKeyword.length"
+          v-if="(selectedUsers.length || isAllUsers)"
           color="danger"
           class="font-small pv-3 mv-5 ph-10"
           @click="deleteUsers"
@@ -93,6 +93,13 @@
         @delete="handleDeletion"
         @close="closeDeletePopup"
       />
+      <edit-user
+        v-if="showEditPopup"
+        :editing-user="editingUser"
+        :show="showEditPopup"
+        @save="handleEditedUser"
+        @close="closeEditPopup"
+      />
     </vs-col>
   </vs-row>
 </template>
@@ -102,10 +109,11 @@
   import SearchBar from './SearchBar';
   import AppPagination from './AppPagination';
   import DeleteUser from './DeleteUser';
+  import EditUser from './EditUser';
 
   export default {
     name: 'LandingPage',
-    components: { DeleteUser, AppPagination, SearchBar },
+    components: { EditUser, DeleteUser, AppPagination, SearchBar },
     data: function () {
       return {
         users: [],
@@ -193,8 +201,11 @@
         }
       },
       selectAll: function () {
-        this.users.forEach(user => {
-          user['is-selected'] = this.isAllUsers;
+        // let currentUsers = this.users.slice(this.startRecordIndex, this.endRecordIndex);
+        this.users.forEach((user, index) => {
+          if(index >= this.startRecordIndex && index < this.endRecordIndex) {
+            user['is-selected'] = this.isAllUsers;
+          }
         });
         this.selectedUsers = this.deepCopy(this.users);
       },
@@ -204,7 +215,11 @@
       },
       handleEditedUser: function (user) {
         let editingIndex = this.users.findIndex(u => u['id'] === user['id']);
-        this.users[editingIndex] = user;
+        this.users[editingIndex] = this.deepCopy(user);
+        this.$nextTick(() => {
+          this.closeEditPopup();
+        });
+        this.$forceUpdate();
       },
       deleteUsers: function (users) {
         if(users.length) {
@@ -214,6 +229,10 @@
       },
       closeDeletePopup: function () {
         this.showDeletePopup = false;
+      },
+      closeEditPopup: function () {
+        this.showEditPopup = false;
+        this.editingUser = null;
       },
       handleDeletion: function (users) {
         this.users = this.users.filter(user => {
