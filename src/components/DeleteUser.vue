@@ -8,9 +8,11 @@
   >
     <div>
       <vs-row class="pb-10">
-        Are you sure you want to
+        <span class="pr-4">
+          Are you sure you want to
+        </span>
         <span v-if="users.length > 1">
-          delete all users?
+          delete all selected users?
         </span>
         <span v-else>
           delete this user?
@@ -63,6 +65,7 @@
     },
     methods: {
       confirmDeletion: function () {
+        console.log('selected users: ', this.users);
         this.$emit('delete', this.users);
       }
     }

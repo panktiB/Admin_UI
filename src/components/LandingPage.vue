@@ -16,6 +16,7 @@
             <vs-th class="select-all-option pb-5">
               <vs-checkbox
                 v-model="isAllUsers"
+                :disabled="! filteredUsers.length || searchKeyword.length"
                 icon="fas fa-check"
                 icon-pack="fa5"
                 size="small"
@@ -50,13 +51,20 @@
               <td
                 v-for="info in fields"
                 :key="info['name']"
+                :class="info['name'] !== 'email' ? 'text-capitalize' : ''"
                 class="text-align-left"
               >
                 {{ user[info['name']] }}
               </td>
               <vs-td class="text-align-left">
-                <vs-icon class="fas fa-edit ph-5 text-lightestgrey" />
-                <vs-icon class="far fa-trash-alt ph-5" />
+                <vs-icon
+                  class="fas fa-edit ph-5 text-lightestgrey pointer-cursor hover:text-primary"
+                  @click="editUser(user)"
+                />
+                <vs-icon
+                  class="far fa-trash-alt ph-5 pointer-cursor hover:text-primary"
+                  @click="deleteUsers([user])"
+                />
               </vs-td>
             </vs-tr>
           </template>
@@ -64,7 +72,7 @@
       </div>
       <div class="footer-content flex-box ph-25">
         <vs-button
-          v-if="selectedUsers.length || isAllUsers"
+          v-if="(selectedUsers.length || isAllUsers) && ! searchKeyword.length"
           color="danger"
           class="font-small pv-3 mv-5 ph-10"
           @click="deleteUsers"
@@ -123,6 +131,8 @@
         isAllUsers: false,
         selectedUsers: [],
         showDeletePopup: false,
+        showEditPopup: false,
+        editingUser: null,
       };
     },
     computed: {
@@ -188,7 +198,18 @@
         });
         this.selectedUsers = this.deepCopy(this.users);
       },
-      deleteUsers: function () {
+      editUser: function (user) {
+        this.editingUser = user;
+        this.showEditPopup = true;
+      },
+      handleEditedUser: function (user) {
+        let editingIndex = this.users.findIndex(u => u['id'] === user['id']);
+        this.users[editingIndex] = user;
+      },
+      deleteUsers: function (users) {
+        if(users.length) {
+          this.selectedUsers = users;
+        }
         this.showDeletePopup = true;
       },
       closeDeletePopup: function () {
@@ -197,10 +218,11 @@
       handleDeletion: function (users) {
         this.users = this.users.filter(user => {
           let existingUserIndex = users.findIndex(u => u['id'] === user['id']);
-          console.log(existingUserIndex);
           return existingUserIndex === -1;
         });
         this.closeDeletePopup();
+        this.isAllUsers = false;
+        this.selectedUsers = [];
       }
     }
   };
